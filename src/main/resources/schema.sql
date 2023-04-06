@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS "user" (
+    id IDENTITY NOT NULL PRIMARY KEY,
+    login VARCHAR NOT NULL UNIQUE,
+    encoded_password VARCHAR NOT NULL,
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL
+);

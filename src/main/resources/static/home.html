@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Fragile</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+</head>
+<body>
+<h1>Bienvenu chez Fragile™ <span id="login" class="text-primary"></span> !</h1>
+
+<div class="container mt-5 border border-3 rounded bg-light">
+    <div class="alert alert-danger" role="alert" id="errorMessage" style="visibility: hidden;">
+    </div>
+    <div class="form-floating">
+        <textarea class="form-control" placeholder="Write your SQL query" id="sqlQuery"
+                  style="height: 100px; margin-bottom: 15px"></textarea>
+        <label for="floatingTextarea">SELECT * FROM ...</label>
+    </div>
+    <button type="button" class="btn btn-warning" id="executeSql">Execute</button>
+
+    <table id="sqlResult" class="table table-striped" style="margin-top: 15px">
+    </table>
+</div>
+
+<script type="text/javascript">
+    function getParameterByName(name, url = window.location.href) {
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+
+    function updateLogin() {
+        var login = getParameterByName('login');
+
+        document.getElementById('login').innerHTML = login;
+    }
+
+    function executeSql() {
+        var sqlQuery = document.getElementById('sqlQuery').value;
+        var authorization = sessionStorage.getItem("authorization");
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/inspect", true);
+        xhr.setRequestHeader('Accept', 'application/json; charset=UTF-8');
+        xhr.setRequestHeader('Authorization', authorization);
+
+        var errorMessage = document.getElementById("errorMessage");
+
+        document.getElementById('sqlResult').innerHTML = "";
+
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                const status = xhr.status;
+                if (status === 0 || (status >= 200 && status < 400)) {
+                    var response = JSON.parse(xhr.responseText);
+                    var tableContent = "<thead>\n  <tr>";
+                    response.headers.forEach(header => {
+                        tableContent += "    <th scope=\"col\">" + header + "</th>\n";
+                    });
+                    tableContent += "  </tr>\n</thead>\n<tbody>\n";
+                    response.rows.forEach(row => {
+                        tableContent += "  <tr>\n";
+                        row.forEach(value => {
+                            tableContent += "    <td>" + value + "</td>\n";
+                        });
+                        tableContent += "  </tr>\n";
+                    });
+                    tableContent += "<tbody>";
+
+                    document.getElementById('sqlResult').innerHTML = tableContent;
+                } else {
+                  errorMessage.innerHTML = "Error: " + status;
+                  errorMessage.style.visibility = "visible";
+                }
+             }
+        };
+        errorMessage.style.visibility = "hidden";
+        xhr.send(sqlQuery);
+    }
+
+    updateLogin();
+    document.getElementById('executeSql').onclick = function() {
+        executeSql();
+        return false;
+    };
+
+
+
+</script>
+</body>
