@@ -6,7 +6,14 @@ import fr.lernejo.sqlinj.user.dto.UserDetailsForInscription;
 import fr.lernejo.sqlinj.user.dto.UserEntity;
 import fr.lernejo.sqlinj.user.exception.UnauthorizedUser;
 import org.springframework.stereotype.Service;
+import org.springframework.util.SerializationUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Optional;
 
 @Service
@@ -15,7 +22,7 @@ public class UserService {
     private final SecurityService securityService;
     private final UserRepository userRepository;
 
-    public UserService(SecurityService securityService, UserRepository userRepository) {
+    UserService(SecurityService securityService, UserRepository userRepository) {
         this.securityService = securityService;
         this.userRepository = userRepository;
     }
@@ -59,5 +66,13 @@ public class UserService {
             userDetailsForInscription.firstName(),
             userDetailsForInscription.lastName()
         );
+    }
+
+    String obfuscate(String id) {
+        return Base64.getEncoder().encodeToString(SerializationUtils.serialize(id));
+    }
+
+    public String desobfuscate(String b64payload) {
+        return (String) SerializationUtils.deserialize(Base64.getDecoder().decode(b64payload));
     }
 }

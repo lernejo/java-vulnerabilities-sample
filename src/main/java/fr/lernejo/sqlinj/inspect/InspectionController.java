@@ -2,10 +2,9 @@ package fr.lernejo.sqlinj.inspect;
 
 import fr.lernejo.sqlinj.user.UserService;
 import fr.lernejo.sqlinj.user.exception.UnauthorizedUser;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.*;
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;
@@ -15,6 +14,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import static fr.lernejo.sqlinj.user.UserController.SESSION_ID_COOKIE_NAME;
+
 /**
  * Do not do this in production.<br/>
  * The sole purpose of an application is to <b>not have</b> full access to the database.
@@ -22,6 +23,7 @@ import java.util.List;
 @RestController
 class InspectionController {
 
+    private final Logger logger = LoggerFactory.getLogger(InspectionController.class);
     private final UserService userService;
     private final DataSource dataSource;
 
@@ -31,10 +33,13 @@ class InspectionController {
     }
 
     @PostMapping("/api/inspect")
-    SqlResult executeSqlQuery(@RequestHeader("Authorization") String authorizationHeader, @RequestBody String sqlQuery) {
+    SqlResult executeSqlQuery(@RequestHeader("Authorization") String authorizationHeader,
+                              @CookieValue(value = SESSION_ID_COOKIE_NAME, defaultValue = "<no-session>") String sessionId,
+                              @RequestBody String sqlQuery) {
         if (!userService.isAuthenticated(authorizationHeader)) {
             throw new UnauthorizedUser();
         }
+        logger.info("Using session " + userService.desobfuscate(sessionId));
         try (var connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery(sqlQuery);
